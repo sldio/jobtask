@@ -1,6 +1,6 @@
 package com.task.devices.controller;
 
-import com.task.devices.services.AppException;
+import com.task.devices.services.data.exceptions.AppException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;

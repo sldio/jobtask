@@ -1,5 +1,8 @@
 package com.task.devices.services;
 
+import com.task.devices.services.data.exceptions.AppException;
+import com.task.devices.services.data.exceptions.ValidationException;
+
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;

@@ -1,6 +1,6 @@
 package com.task.devices.domain;
 
-import com.task.devices.services.AppException;
+import com.task.devices.services.data.exceptions.AppException;
 import lombok.Getter;
 
 import javax.persistence.AttributeConverter;
