@@ -1,4 +1,4 @@
-package com.task.devices.services;
+package com.task.devices.services.data.exceptions;
 
 public class AppException extends RuntimeException{
 

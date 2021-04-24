@@ -3,8 +3,11 @@ package com.task.devices.services;
 import com.task.devices.Templates;
 import com.task.devices.controller.data.UpdateDeviceRequest;
 import com.task.devices.domain.OperationSystem;
+import com.task.devices.domain.api.UserRole;
 import com.task.devices.repository.DevicesRepository;
 import com.task.devices.services.data.DeviceDto;
+import com.task.devices.services.data.exceptions.DeviceAccessException;
+import com.task.devices.services.data.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +15,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.task.devices.Templates.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DevicesServiceTest {
     private DevicesService devicesService;
@@ -25,12 +29,12 @@ class DevicesServiceTest {
     }
 
     @Test
-    void getDeviceById_exists_success() {
+    void getDevice_exists_success() {
         DeviceDto mockDevice = deviceDto();
 
         devicesRepository.save(mockDevice.toNewEntity());
 
-        DeviceDto device = devicesService.getDeviceById(DEVICE_ID);
+        DeviceDto device = devicesService.getDevice(user(UserRole.CLIENT), DEVICE_ID);
 
         Assertions.assertEquals(DEVICE_ID, device.getDeviceId());
         Assertions.assertEquals(USER_ID, device.getUserId());
@@ -39,14 +43,15 @@ class DevicesServiceTest {
     }
 
     @Test
-    void getDeviceById_noDevice_throwResourceNotFoundException() {
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> devicesService.getDeviceById(DEVICE_ID));
+    void getDevice_noDevice_throwResourceNotFoundException() {
+        ResourceNotFoundException exception =
+                assertThrows(ResourceNotFoundException.class, () -> devicesService.getDevice(user(UserRole.CLIENT), DEVICE_ID));
         Assertions.assertEquals("Unknown device id IOS-12112", exception.getMessage());
     }
 
     @Test
-    void addDeviceById_success() {
-        DeviceDto result = devicesService.addDevice(deviceDto());
+    void addDevice_success() {
+        DeviceDto result = devicesService.addDevice(newDeviceDto());
 
         assertEquals(USER_ID, result.getUserId());
     }
@@ -54,17 +59,17 @@ class DevicesServiceTest {
     @Test
     void updateDevice_unknownUser_throwResourceNotFoundException() {
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> devicesService.updateDevice("someId", DEVICE_ID, new UpdateDeviceRequest()));
+                () -> devicesService.updateDevice(user(UserRole.CLIENT), DEVICE_ID, new UpdateDeviceRequest()));
 
-        assertEquals("There is no device IOS-12112 for user someId", exception.getMessage());
+        assertEquals("There is no device " + DEVICE_ID + " for user " + USER_ID, exception.getMessage());
     }
 
     @Test
     void updateDevice_unknownDevice_throwResourceNotFoundException() {
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> devicesService.updateDevice(USER_ID, "someId", new UpdateDeviceRequest()));
+                () -> devicesService.updateDevice(user(UserRole.CLIENT), DEVICE_ID, new UpdateDeviceRequest()));
 
-        assertEquals("There is no device someId for user ID-1111", exception.getMessage());
+        assertEquals("There is no device " + DEVICE_ID + " for user " + USER_ID, exception.getMessage());
     }
 
 
@@ -76,7 +81,7 @@ class DevicesServiceTest {
 
         devicesRepository.save(mockDevice.toNewEntity());
 
-        DeviceDto result = devicesService.updateDevice(USER_ID, DEVICE_ID, updateDeviceRequest);
+        DeviceDto result = devicesService.updateDevice(user(UserRole.CLIENT), DEVICE_ID, updateDeviceRequest);
 
         assertEquals(USER_ID, result.getUserId());
         assertEquals(DEVICE_ID, result.getDeviceId());
@@ -91,14 +96,25 @@ class DevicesServiceTest {
         devicesRepository.save(mockDevice1.toNewEntity());
         devicesRepository.save(mockDevice2.toNewEntity());
 
-        List<DeviceDto> device = devicesService.getDevices(USER_ID);
+        List<DeviceDto> device = devicesService.getDevices(user(UserRole.CLIENT));
 
        assertEquals(2, device.size());
     }
 
     @Test
+    void getUserDevice_notValidUserId_throwException() {
+        DeviceDto mockDevice = new DeviceDto("wrong_user", DEVICE_ID, OperationSystem.IOS, "some_data");
+
+        devicesRepository.save(mockDevice.toNewEntity());
+
+        DeviceAccessException ex =
+                assertThrows(DeviceAccessException.class, () -> devicesService.getDevice(user(UserRole.CLIENT), DEVICE_ID));
+        assertEquals("User " + USER_ID + " doesn't have access to device " + DEVICE_ID, ex.getMessage());
+    }
+
+    @Test
     void getUserDevices_noDevices_emptyList() {
-        List<DeviceDto> device = devicesService.getDevices(USER_ID);
+        List<DeviceDto> device = devicesService.getDevices(user(UserRole.CLIENT));
 
         assertEquals(0, device.size());
     }
